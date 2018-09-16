@@ -9,6 +9,7 @@
     <!-- Mobile Specific Metas -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
+    <!-- I could use the external file for the css but as the css is not that much I used in the same file. -->
     <style>
         /* Always set the map height explicitly to define the size of the div
              * element that contains the map. */
@@ -70,6 +71,7 @@
 
     $(document).ready(function () {
 
+        // ajax setup to access the external file for accessing the variables.
         $.ajaxSetup({
             beforeSend: function (xhr) {
                 if (xhr.overrideMimeType) {
@@ -86,6 +88,12 @@
 
             async: true
         });
+        
+        // bonus portion : 
+        // to find out the greatest earthquakes all over the world. One confusion I have here, for the recent 12 month. I did not find any
+        // suitable api for that. because 
+        // date : date of earthquakes 'yyyy-MM-dd', optional parameter, earthquakes older or equal the given date sorted by date,magnitude
+        // this parameter will not work for the recent 12 month. For which I am not sure what I need to do here. 
         greatestEarthQuakeURL = "http://api.geonames.org/earthquakesJSON?north=-90&south=90&east=180&west=-180&username=" + userName
         $.getJSON(greatestEarthQuakeURL, function (json1) {
             objects = json1.earthquakes
@@ -102,11 +110,13 @@
 
 
 
-
+        // the main portion :
         $("#searchButton").click(function () {
             // alert("a")
             finalUrl = url + "address=" + $("#cityName").val() + "&key=" + key;
             // alert(finalUrl)
+
+            // define the bounding box
             $.getJSON(finalUrl, function (result) {
                 primarylat = result.results[0].geometry.location.lat
                 primarylng = result.results[0].geometry.location.lng
@@ -117,6 +127,7 @@
                 var newURL = "http://api.geonames.org/earthquakesJSON?north=" + north + "&south=" + south + "&east=" + east + "&west=" + west + "&lang=de&username=" + userName
                 // alert(newURL);
 
+                // initializing the map with the primary latitude and longitude
                 initMap(primarylat, primarylng)
                 $.getJSON(newURL, function (json1) {
                     objects = json1.earthquakes
@@ -128,6 +139,7 @@
                             title: "Click Here to get Details"
                         });
 
+                        // this is for the tool tip
                         contentString = ""
                         contentString = contentString + "datetime : " + data.datetime + " <br>"
                         contentString = contentString + "depth : " + data.depth + " <br>"
