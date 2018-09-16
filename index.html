@@ -1,0 +1,159 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChh2CzisCyXxlj-B1iZbqej_oDpV_8-Hg" async defer></script>
+    <!-- Mobile Specific Metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+             * element that contains the map. */
+
+        #map {
+            height: 90%;
+        }
+
+        /* Optional: Makes the sample page fill the window. */
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="modal-body row">
+        <div class="col-md-3">
+            <h1>Top largest earthquakes</h1>
+            <ul class="list-group" id="listEarthQuake">
+
+            </ul>
+        </div>
+        <div class="col-md-9">
+            <!-- Your second column here -->
+            <div class="form-group">
+                <input type="text" id="cityName" placeholder="Write your city here" class="form-control" />
+            </div>
+            <div class="form-group">
+                <button type="button" id="searchButton" class="form-control">Click here to Search</button>
+            </div>
+
+            <div id="map"></div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>
+
+<script type="text/javascript">
+    var url = "https://maps.googleapis.com/maps/api/geocode/json?"
+    var map;
+    var key;
+    var userName
+    function initMap(lat, long) {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: lat, lng: long },
+            zoom: 2
+        });
+    }
+
+    $(document).ready(function () {
+
+        $.ajaxSetup({
+            beforeSend: function (xhr) {
+                if (xhr.overrideMimeType) {
+                    xhr.overrideMimeType("application/json");
+                }
+            },
+            async: false
+        });
+        $.getJSON("config.json", function (data) {
+            key = data.apiKey
+            userName = data.geoUserName
+        });
+        $.ajaxSetup({
+
+            async: true
+        });
+        greatestEarthQuakeURL = "http://api.geonames.org/earthquakesJSON?north=-90&south=90&east=180&west=-180&username=" + userName
+        $.getJSON(greatestEarthQuakeURL, function (json1) {
+            objects = json1.earthquakes
+            contentString = ""
+            $.each(objects, function (key, data) {
+                contentString = contentString + '<li class="list-group-item">' + data.magnitude + '(' + data.lat + ', ' + data.lng + ')</li>'
+
+            });
+            $("#listEarthQuake").html(contentString)
+
+        });
+
+
+
+
+
+
+        $("#searchButton").click(function () {
+            // alert("a")
+            finalUrl = url + "address=" + $("#cityName").val() + "&key=" + key;
+            // alert(finalUrl)
+            $.getJSON(finalUrl, function (result) {
+                primarylat = result.results[0].geometry.location.lat
+                primarylng = result.results[0].geometry.location.lng
+                var north = result.results[0].geometry.viewport.northeast.lat
+                var east = result.results[0].geometry.viewport.northeast.lng
+                var south = result.results[0].geometry.viewport.southwest.lat
+                var west = result.results[0].geometry.viewport.southwest.lng
+                var newURL = "http://api.geonames.org/earthquakesJSON?north=" + north + "&south=" + south + "&east=" + east + "&west=" + west + "&lang=de&username=" + userName
+                // alert(newURL);
+
+                initMap(primarylat, primarylng)
+                $.getJSON(newURL, function (json1) {
+                    objects = json1.earthquakes
+                    $.each(objects, function (key, data) {
+                        var latLng = new google.maps.LatLng(data.lat, data.lng);
+                        // Creating a marker and putting it on the map
+                        var marker = new google.maps.Marker({
+                            position: latLng,
+                            title: "Click Here to get Details"
+                        });
+
+                        contentString = ""
+                        contentString = contentString + "datetime : " + data.datetime + " <br>"
+                        contentString = contentString + "depth : " + data.depth + " <br>"
+                        contentString = contentString + "longitude : " + data.lng + " <br>"
+                        contentString = contentString + "src : " + data.src + " <br>"
+                        contentString = contentString + "eqid : " + data.eqid + " <br>"
+                        contentString = contentString + "magnitude : " + data.magnitude + " <br>"
+                        contentString = contentString + "latitude : " + data.lat + " <br>"
+
+                        var infowindow = new google.maps.InfoWindow({
+                            content: contentString
+                        });
+
+                        marker.setMap(map);
+                        marker.addListener('click', function () {
+                            infowindow.open(map, marker);
+                        });
+
+                    });
+                });
+            });
+
+
+
+
+
+        })
+    }); 
+</script>
